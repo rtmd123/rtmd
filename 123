@@ -1,1 +1,295 @@
-32ed2d
+Part 2: Configure Basic Devices Settings
+Step 1: Configure PCs with IPv4 addresses
+
+PC-A IPv4 addresses:
+IP Address: 64.100.1.5
+Subnet Mask: 255.255.255.248
+Default Gateway: 64.100.1.1
+DNS Server: 209.165.202.131
+
+PC-B IPv4 addresses:
+IP Address: 192.168.1.5
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.1.1
+DNS Server: 209.165.202.131
+
+PC-C IPv4 addresses:
+IP Address: 172.16.2.5
+Subnet Mask: 255.255.255.0
+Default Gateway: 172.16.2.1
+DNS Server: 209.165.202.131
+
+Step 2: Configure router R1 and R2
+R1/////////////////////////////////
+
+Router(config)#no ip domain lookup 
+Router(config)#hostname R1
+R1(config)#enable secret ciscoenpass
+
+R1(config)#line console 0
+R1(config-line)#password ciscoconpass
+R1(config-line)#login
+R1(config-line)#exit
+
+R1(config)#security passwords min-length 10
+R1(config)#service password-encryption 
+R1(config)#banner motd #Unauthorized Acess is Prohibited#
+R2//////////////////////////////////////////
+
+Router(config)#no ip domain lookup 
+Router(config)#hostname R2
+R2(config)#enable secret ciscoenpass
+
+R2(config)#line console 0
+R2(config-line)#password ciscoconpass
+R2(config-line)#login
+R2(config-line)#exit
+
+R2(config)#security passwords min-length 10
+R2(config)#service password-encryption 
+R2(config)#banner motd #Unauthorized Acess is Prohibited#
+////////////////////////////////////////////
+
+R1(config)#interface GigabitEthernet0/0/0
+R1(config-if)#description Connection to R2
+R1(config-if)#ip address 198.51.100.1 255.255.255.252
+R1(config-if)#no shutdown
+
+R1(config-if)#interface GigabitEthernet0/0/1
+R1(config-if)#description Connection to S2
+R1(config-if)#ip address 192.168.1.1 255.255.255.0
+R1(config-if)#no shutdown
+
+R1(config-if)#interface GigabitEthernet0/0/2
+R1(config-if)#description Connection to S1
+R1(config-if)#ip address 64.100.1.1 255.255.255.248
+R1(config-if)#no shutdown
+///////////////////////////////////////////////
+
+R2(config)#interface GigabitEthernet0/0/0
+R2(config-if)#description Connection to R1
+R2(config-if)#ip address 198.51.100.2 255.255.255.252
+R2(config-if)#no shutdown
+
+R2(config-if)#interface GigabitEthernet0/0/1
+R2(config-if)#description Connection to S4
+R2(config-if)#ip address 172.16.2.1 255.255.255.0
+R2(config-if)#no shutdown
+
+R2(config-if)#interface GigabitEthernet0/0/2
+R2(config-if)#description Connection to S3
+R2(config-if)#ip address 209.165.202.129 255.255.255.224
+R2(config-if)#no shutdown
+//////////////////////////////////////////////
+
+R1(config)#ip domain name ccna-lab.com
+R1(config)#username admin secret admin1pass
+
+R1(config)#line vty 0 15
+R1(config-line)#login local
+R1(config-line)#transport input ssh 
+R1(config-line)#exit
+
+R1(config)#crypto key generate rsa
+1024
+
+R1(config)#ip ssh version 2
+///////////////////////////////////////////////
+
+R2(config)#ip domain name ccna-lab.com
+R2(config)#username admin secret admin1pass
+
+R2(config)#line vty 0 15
+R2(config-line)#login local
+R2(config-line)#transport input ssh 
+R2(config-line)#exit
+
+R2(config)#crypto key generate rsa
+1024
+
+R2(config)#ip ssh version 2
+/////////////////////////////////////////////
+Step 3: Configure switches S1, S2, S3, and S4
+
+Switch(config)#hostname S1
+S1(config)#interface Vlan1
+S1(config-if)#ip address 64.100.1.2 255.255.255.248
+S1(config-if)#no shutdown 
+
+S1(config-if)#ip default-gateway 64.100.1.1
+//////////////////////////////////////////////
+
+Switch(config)#hostname S2
+S2(config)#interface Vlan1
+S2(config-if)#ip address 192.168.1.2 255.255.255.0
+S2(config-if)#no shutdown 
+
+S2(config-if)#ip default-gateway 192.168.1.1
+//////////////////////////////////////////////
+
+Switch(config)#hostname S3
+S3(config)#interface Vlan1
+S3(config-if)#ip address 209.165.202.130 255.255.255.224
+S3(config-if)#no shutdown 
+
+S3(config-if)#ip default-gateway 209.165.202.129
+//////////////////////////////////////////////
+
+Switch(config)#hostname S4
+S4(config)#interface Vlan1
+S4(config-if)#ip address 172.16.2.2 255.255.255.0
+S4(config-if)#no shutdown 
+
+S4(config-if)#ip default-gateway 172.16.2.1
+////////////////////////////////////////////////
+Part 3: Configure Single Area OSPFv2
+Step 1: Configure single-area OSPF routing
+
+R1(config)#router ospf 1
+R1(config-router)#router-id 0.0.0.1
+R1(config-router)#network 64.100.1.0 0.0.0.7 area 0
+R1(config-router)#network 198.51.100.0 0.0.0.3 area 0
+//////////////////////////////////////////////////
+
+R2(config)#router ospf 1
+R2(config-router)#router-id 0.0.0.2
+R2(config-router)#network 209.165.202.128 0.0.0.31 area 0
+R2(config-router)#network 198.51.100.0 0.0.0.3 area 0
+///////////////////////////////////////////////////
+Step 2: Adjust OSPF operation
+
+R1(config)# router ospf 1
+R1(config-router)# passive-interface GigabitEthernet0/0/1
+R1(config-router)# passive-interface GigabitEthernet0/0/2
+R1(config-router)# auto-cost reference-bandwidth 1000
+R1(config-router)# exit
+
+R1(config)# interface GigabitEthernet0/0/0
+R1(config-if)# ip ospf network point-to-point
+R1(config-if)# ip ospf hello-interval 30
+///////////////////////////////////////////////////
+
+R2(config)# router ospf 1
+R2(config-router)# passive-interface GigabitEthernet0/0/1
+R2(config-router)# passive-interface GigabitEthernet0/0/2
+R2(config-router)# auto-cost reference-bandwidth 1000
+R2(config-router)# exit
+
+R2(config)# interface GigabitEthernet0/0/0
+R2(config-if)# ip ospf network point-to-point
+R2(config-if)# ip ospf hello-interval 30
+/////////////////////////////////////////////////////
+Part 4: Configure Access Control and NAT
+Step 2: Configure NAT
+
+R1(config)# ip nat inside source static 192.168.1.5 64.100.1.7
+
+R1(config)# interface GigabitEthernet0/0/0
+R1(config-if)# ip nat outside
+
+R1(config-if)# interface GigabitEthernet0/0/1
+R1(config-if)# ip nat inside
+//////////////////////////////////////////////////////
+
+R2(config)# ip nat pool IPNAT1 209.165.202.140 209.165.202.150 netmask 255.255.255.224
+R2(config)# ip nat inside source list 1 pool IPNAT1 overload
+R2(config)# access-list 1 permit 172.16.2.0 0.0.0.15
+
+R2(config)# interface GigabitEthernet0/0/1
+R2(config-if)# ip nat inside
+//////////////////////////////////////////////////////
+Step 3: Configure access control on R1
+
+R1(config)#ip access-list standard R1-VTY-LIMIT
+R1(config-std-nacl)#permit host 192.168.1.5
+R1(config-std-nacl)#
+R1(config-std-nacl)#line vty 0 15
+R1(config-line)#access-class R1-VTY-LIMIT in
+///////////////////////////////////////////////////////
+Step 4: Configure access control on S1
+
+S1(config)#ip access-list standard S1-VTY-LIMIT
+S1(config-std-nacl)#permit host 192.168.1.5
+S1(config-std-nacl)#
+S1(config-std-nacl)#line vty 0 15
+S1(config-line)#access-class S1-VTY-LIMIT in
+///////////////////////////////////////////////////////
+Step 5: Configure access control on R2
+
+R2(config)#ip access-list standard R2-VTY-LIMIT
+R2(config-std-nacl)#permit host 172.16.2.5
+R2(config-std-nacl)#
+R2(config-std-nacl)#line vty 0 15
+R2(config-line)#access-class R2-VTY-LIMIT in
+R2(config-line)#exit
+
+R2(config)#ip access-list extended R2-SECURITY
+R2(config-ext-nacl)#permit tcp host 64.100.1.7 host 209.165.202.131 eq ftp
+R2(config-ext-nacl)#deny tcp any any eq ftp
+R2(config-ext-nacl)#deny tcp any any eq 22
+R2(config-ext-nacl)#permit ip any any
+
+R2(config-ext-nacl)#interface GigabitEthernet0/0/0
+R2(config-if)#ip access-group R2-SECURITY in
+R2(config-if)#ip nat outside
+//////////////////////////////////////////////////////
+Step 6: Configure access control on S3
+
+S3(config)#ip access-list standard S3-VTY-LIMIT
+S3(config-std-nacl)#permit host 172.16.2.5
+S3(config-std-nacl)#
+S3(config-std-nacl)#line vty 0 15
+S3(config-line)#access-class S3-VTY-LIMIT in
+S3(config-line)#login
+//////////////////////////////////////////////////////
+Part 5: Perform Configuration Backup and IOS Update
+Step 1: Use TFTP server to backup device configurations
+
+On R1://///////////////////////////////////
+R1>en
+R1#copy running-config tftp
+Address or name of remote host []? 192.168.1.5
+Destination filename [R1-confg]? R1-Run-Config
+
+On S1://////////////////////////////////////
+S1>en
+S1#copy running-config tftp
+Address or name of remote host []? 192.168.1.5
+Destination filename [S1-confg]? S1-Run-Config
+
+On S2:///////////////////////////////////////////
+S2>en
+S2#copy running-config tftp
+Address or name of remote host []? 192.168.1.5
+Destination filename [S2-confg]? S2-Run-Config
+
+Writing running-config....!!
+[OK - 1122 bytes]
+
+1122 bytes copied in 3.003 secs (373 bytes/sec)
+///////////////////////////////////////////////////////
+Step 2: Use TFTP server to update/upgrade IOS software
+
+S3#copy tftp flash:
+Address or name of remote host []? 209.165.202.131
+Source filename []? c2960-lanbasek9-mz.150-2.SE4.bin
+Destination filename [c2960-lanbasek9-mz.150-2.SE4.bin]? 
+
+Accessing tftp://209.165.202.131/c2960-lanbasek9-mz.150-2.SE4.bin....
+Loading c2960-lanbasek9-mz.150-2.SE4.bin from 209.165.202.131: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[OK - 4670455 bytes]
+
+S3#configure terminal 
+S3(config)#boot system flash:c2960-lanbasek9-mz.150-2.SE4.bin
+S3(config)#exit
+S3#
+%SYS-5-CONFIG_I: Configured from console by console
+
+S3#copy running-config startup-config
+Destination filename [startup-config]? 
+Building configuration...
+[OK]
+S3#reload
+Proceed with reload? [confirm]
+
+
